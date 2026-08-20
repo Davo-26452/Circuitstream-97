@@ -1,0 +1,95 @@
+<html>
+<head>
+<title>app.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #2aacb8;}
+</style>
+</head>
+<body bgcolor="#191a1c">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+app.py</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">streamlit </span><span class="s0">as </span><span class="s1">st</span>
+<span class="s0">import </span><span class="s1">os</span>
+<span class="s0">from </span><span class="s1">dotenv </span><span class="s0">import </span><span class="s1">load_dotenv</span>
+<span class="s0">from </span><span class="s1">openai </span><span class="s0">import </span><span class="s1">OpenAI</span>
+<span class="s1">load_dotenv</span><span class="s2">()</span>
+
+<span class="s0">import </span><span class="s1">chromadb</span>
+<span class="s0">from </span><span class="s1">doc_helper </span><span class="s0">import </span><span class="s1">read_file</span>
+
+<span class="s1">load_dotenv</span><span class="s2">()</span>
+
+<span class="s1">db</span><span class="s2">= </span><span class="s1">chromadb</span><span class="s2">.</span><span class="s1">PersistentClient</span><span class="s2">(</span><span class="s1">path</span><span class="s2">=</span><span class="s3">&quot;./chroma_db&quot;</span><span class="s2">)</span>
+<span class="s1">brain </span><span class="s2">= </span><span class="s1">db</span><span class="s2">.</span><span class="s1">get_or_create_collection</span><span class="s2">(</span><span class="s3">&quot;documents&quot;</span><span class="s2">)</span>
+<span class="s1">memory </span><span class="s2">= </span><span class="s1">db</span><span class="s2">.</span><span class="s1">get_or_create_collection</span><span class="s2">(</span><span class="s3">&quot;conversations&quot;</span><span class="s2">)</span>
+
+<span class="s0">def </span><span class="s1">chunk_it</span><span class="s2">(</span><span class="s1">text</span><span class="s2">,</span><span class="s1">size</span><span class="s2">=</span><span class="s4">400</span><span class="s2">):</span>
+    <span class="s1">bits </span><span class="s2">= </span><span class="s1">text</span><span class="s2">.</span><span class="s1">split</span><span class="s2">(</span><span class="s3">&quot;. &quot;</span><span class="s2">)</span>
+    <span class="s1">chunks</span><span class="s2">, </span><span class="s1">current </span><span class="s2">= [], </span><span class="s3">&quot;&quot;</span>
+    <span class="s0">for </span><span class="s1">bit </span><span class="s0">in </span><span class="s1">bits</span><span class="s2">:</span>
+        <span class="s0">if </span><span class="s1">len</span><span class="s2">(</span><span class="s1">current</span><span class="s2">) + </span><span class="s1">len</span><span class="s2">(</span><span class="s1">bit</span><span class="s2">) &lt; </span><span class="s1">size</span><span class="s2">:</span>
+            <span class="s1">current </span><span class="s2">+= </span><span class="s1">bit </span><span class="s2">+ </span><span class="s3">&quot;. &quot;</span>
+        <span class="s0">else</span><span class="s2">:</span>
+            <span class="s0">if </span><span class="s1">current</span><span class="s2">.</span><span class="s1">strip</span><span class="s2">():</span>
+                <span class="s1">chunks</span><span class="s2">.</span><span class="s1">append</span><span class="s2">(</span><span class="s1">current</span><span class="s2">.</span><span class="s1">strip</span><span class="s2">())</span>
+            <span class="s1">current </span><span class="s2">= </span><span class="s1">bit </span><span class="s2">+ </span><span class="s3">&quot;. &quot;</span>
+    <span class="s0">if </span><span class="s1">current</span><span class="s2">.</span><span class="s1">strip</span><span class="s2">():</span>
+        <span class="s1">chunks</span><span class="s2">.</span><span class="s1">append</span><span class="s2">(</span><span class="s1">current</span><span class="s2">.</span><span class="s1">strip</span><span class="s2">())</span>
+    <span class="s0">return </span><span class="s1">chunks</span>
+
+<span class="s0">def </span><span class="s1">store_document</span><span class="s2">(</span><span class="s1">file</span><span class="s2">):</span>
+    <span class="s1">chunks </span><span class="s2">= </span><span class="s1">chunk_it </span><span class="s2">(</span><span class="s1">read_file</span><span class="s2">(</span><span class="s1">file</span><span class="s2">))</span>
+    <span class="s1">prefix </span><span class="s2">= </span><span class="s1">file</span><span class="s2">.</span><span class="s1">name</span><span class="s2">.</span><span class="s1">replace</span><span class="s2">(</span><span class="s3">&quot; &quot;</span><span class="s2">, </span><span class="s3">&quot;_&quot;</span><span class="s2">)</span>
+    <span class="s1">brain</span><span class="s2">.</span><span class="s1">upsert</span><span class="s2">(</span>
+        <span class="s1">documents</span><span class="s2">=</span><span class="s1">chunks</span><span class="s2">,</span>
+        <span class="s1">ids</span><span class="s2">=[</span><span class="s3">f&quot;</span><span class="s0">{</span><span class="s1">prefix</span><span class="s0">}</span><span class="s3">_chunk</span><span class="s0">{</span><span class="s1">i</span><span class="s0">}</span><span class="s3">&quot; </span><span class="s0">for </span><span class="s1">i </span><span class="s0">in </span><span class="s1">range</span><span class="s2">(</span><span class="s1">len</span><span class="s2">(</span><span class="s1">chunks</span><span class="s2">))],</span>
+    <span class="s2">)</span>
+    <span class="s0">return </span><span class="s1">len</span><span class="s2">(</span><span class="s1">chunks</span><span class="s2">)</span>
+<span class="s0">def </span><span class="s1">store_conversation</span><span class="s2">(</span><span class="s1">file</span><span class="s2">):</span>
+
+    <span class="s1">st</span><span class="s2">.</span><span class="s1">title</span><span class="s2">(</span><span class="s3">&quot;Stormai&quot;</span><span class="s2">)</span>
+
+<span class="s0">if </span><span class="s3">&quot;messages&quot; </span><span class="s0">not in </span><span class="s1">st</span><span class="s2">.</span><span class="s1">session_state</span><span class="s2">:</span>
+    <span class="s1">st</span><span class="s2">.</span><span class="s1">session_state</span><span class="s2">.</span><span class="s1">messages </span><span class="s2">= []</span>
+<span class="s0">with </span><span class="s1">st</span><span class="s2">.</span><span class="s1">sidebar</span><span class="s2">:</span>
+    <span class="s1">st</span><span class="s2">.</span><span class="s1">header</span><span class="s2">(</span><span class="s3">'Settings'</span><span class="s2">)</span>
+    <span class="s1">name</span><span class="s2">=</span><span class="s1">st</span><span class="s2">.</span><span class="s1">text_input</span><span class="s2">(</span><span class="s3">'David-Paul'</span><span class="s2">)</span>
+    <span class="s1">mood</span><span class="s2">=</span><span class="s1">st</span><span class="s2">.</span><span class="s1">selectbox</span><span class="s2">(</span><span class="s3">&quot;What mood will your Ai have&quot;</span><span class="s2">, [</span><span class="s3">&quot;Happy&quot;</span><span class="s2">,</span><span class="s3">&quot;Sad&quot;</span><span class="s2">,</span><span class="s3">&quot;Angry&quot;</span><span class="s2">])</span>
+    <span class="s1">creativity </span><span class="s2">= </span><span class="s1">st</span><span class="s2">.</span><span class="s1">slider</span><span class="s2">(</span><span class="s3">&quot;Creativity&quot;</span><span class="s2">, </span><span class="s4">0.0</span><span class="s2">,</span><span class="s4">1.0</span><span class="s2">,</span><span class="s4">0.3</span><span class="s2">)</span>
+    <span class="s1">model</span><span class="s2">=</span><span class="s1">st</span><span class="s2">.</span><span class="s1">selectbox</span><span class="s2">(</span><span class="s3">&quot;Model&quot;</span><span class="s2">[</span><span class="s3">&quot;openai/gpt-oss-120b&quot;</span><span class="s2">, </span><span class="s3">&quot;openai/gpt-oss-20b&quot; </span><span class="s2">])</span>
+
+<span class="s1">prompt </span><span class="s2">= </span><span class="s1">st</span><span class="s2">.</span><span class="s1">chat_input</span><span class="s2">(</span><span class="s3">&quot;What can i help you with today&quot;</span><span class="s2">)</span>
+
+<span class="s1">user_input </span><span class="s2">= </span><span class="s1">st</span><span class="s2">.</span><span class="s1">chat_input</span><span class="s2">(</span><span class="s3">&quot;How are you&quot;</span><span class="s2">, </span><span class="s1">accept_file</span><span class="s2">=</span><span class="s0">True</span><span class="s2">, </span><span class="s1">file_type</span><span class="s2">=[</span><span class="s3">&quot;pdf&quot;</span><span class="s2">, </span><span class="s3">&quot;txt&quot;</span><span class="s2">])</span>
+
+<span class="s0">if </span><span class="s1">user_input</span><span class="s2">:</span>
+    <span class="s1">prompt </span><span class="s2">= </span><span class="s1">user_input</span><span class="s2">.</span><span class="s1">text</span>
+    <span class="s0">if </span><span class="s1">user_input</span><span class="s2">.</span><span class="s1">files</span><span class="s2">:</span>
+        <span class="s0">with </span><span class="s1">st</span><span class="s2">.</span><span class="s1">spinner</span><span class="s2">:</span>
+
+<span class="s0">if </span><span class="s1">user_input </span><span class="s0">and </span><span class="s1">prompt</span><span class="s2">:</span>
+    <span class="s1">client </span><span class="s2">= </span><span class="s1">OpenAI</span><span class="s2">(</span>
+        <span class="s1">base_url</span><span class="s2">=</span><span class="s3">&quot;https://models.github.ai/inference&quot;</span><span class="s2">,</span>
+        <span class="s1">api_key</span><span class="s2">=</span><span class="s1">os</span><span class="s2">.</span><span class="s1">getenv</span><span class="s2">(</span><span class="s3">&quot;GITHUB_TOKEN&quot;</span><span class="s2">),</span>
+    <span class="s2">)</span>
+    <span class="s0">with </span><span class="s1">st</span><span class="s2">.</span><span class="s1">chat_message</span><span class="s2">(</span><span class="s3">&quot;user&quot;</span><span class="s2">):</span>
+        <span class="s1">st</span><span class="s2">.</span><span class="s1">write</span><span class="s2">(</span><span class="s1">prompt</span><span class="s2">)</span>
+    <span class="s0">with </span><span class="s1">st</span><span class="s2">.</span><span class="s1">chat_message</span><span class="s2">(</span><span class="s3">&quot;assistant&quot;</span><span class="s2">):</span>
+        <span class="s1">r </span><span class="s2">= </span><span class="s1">client</span><span class="s2">.</span><span class="s1">chat</span><span class="s2">.</span><span class="s1">completions</span><span class="s2">.</span><span class="s1">create</span><span class="s2">(</span>
+            <span class="s1">model</span><span class="s2">=</span><span class="s1">model</span><span class="s2">,</span>
+            <span class="s1">temperature</span><span class="s2">=</span><span class="s1">creativity</span><span class="s2">,</span>
+            <span class="s1">messages</span><span class="s2">=[{</span><span class="s3">&quot;role&quot;</span><span class="s2">:</span><span class="s3">&quot;user&quot;</span><span class="s2">,</span><span class="s3">&quot;content&quot;</span><span class="s2">: </span><span class="s1">prompt</span><span class="s2">}],</span>
+        <span class="s2">)</span>
+    <span class="s1">st</span><span class="s2">.</span><span class="s1">write</span><span class="s2">(</span><span class="s1">r</span><span class="s2">)</span>
+
+</pre>
+</body>
+</html>

@@ -67,6 +67,10 @@ st.html("""
 """)
 
 
+st.image("https://cdn.vectorstock.com/i/1000v/47/89/lightning-bolt-thunder-strike-realistic-vector-29694789.jpg", width=100)
+
+st.caption("Indulge in the knowledge of the weather and beware of its dangers.")
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -251,6 +255,8 @@ All of the above instructions are critical.
 
 Your primary role is to be the user's reliable, easy-to-use personal weather assistant and
 weather research assistant.
+
+Answer the question smoothley as if it were a real person responding to the question that was asked.
 
 Research is an essential part of your job. When necessary, research current weather data,
 maps, forecasts, radar, alerts, natural hazards, travel conditions, and anything else directly

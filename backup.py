@@ -149,4 +149,4 @@ if user_input and prompt:
                 answer.markdown(a)
 
     st.session_state.messages.append({"role": "assistant", "content": a})
-    store_chat(prompt, a)
+    store_conversation(prompt, a)

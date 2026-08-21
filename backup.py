@@ -95,34 +95,35 @@ if user_input:
 if user_input and prompt:
     st.session_state.messages.append({"role":"user", "content":prompt})
     client = OpenAI(
-        base_url="https://models.github.ai/inference",
+        base_url="https://api.groq.com/openai/v1",
         api_key=os.getenv("GITHUB_TOKEN")or st.secrets["GITHUB_TOKEN"],
     )
-    with st.chat_message("user"):
+
+    with st.chat_message("user", avatar="🧑"):
         st.write(prompt)
+
     notes = ""
-    if brain.count()>0:
+    if brain.count() > 0:
         hits = brain.query(query_texts=[prompt], n_results=n_chunks)
         notes = "\n\n".join(hits["documents"][0])
 
         with st.expander("What I looked up"):
-            for doc, dist, in zip(hits["documents"][0], hits["distances"][0]):
-                st.text(f"{dist:.3f}, {doc[:70]}")
+            for doc, dist in zip(hits["documents"][0], hits["distances"][0]):
+                st.text(f"{dist:.3f}  {doc[:70]}")
+
     recalled = ""
-    if recall>0 and memory.count()>message_history:
+    if recall > 0 and memory.count() > message_history:
         old = memory.query(query_texts=[prompt], n_results=recall)
         recalled = "\n\n".join(old["documents"][0])
 
-        with st.expander("What I remembered from past conversations"):
+        with st.expander("What I remembered"):
             for doc, dist in zip(old["documents"][0], old["distances"][0]):
-                st.text(f"{dist:.3f}, {doc[:70]}")
+                st.text(f"{dist:.3f}  {doc[:70]}")
 
     if notes or recalled:
-        full_prompt = (f"These are POTENTIALLY, relevant notes to the user's prompt, "
-                       f"they might be irrelevant:\n {notes}\n\n"
-                       f"These are POTENTIALLY, relevant past conversations, "
-                       f"they might be irrelevant:\n {recalled}\n\n"
-                       f"Now answer based on the above: {prompt}")
+        full_prompt = (f"Notes from the scrolls:\n{notes}\n\n"
+                       f"Things we spoke of before:\n{recalled}\n\n"
+                       f"Now answer: {prompt}")
     else:
         full_prompt = prompt
 
@@ -130,12 +131,12 @@ if user_input and prompt:
         stream = client.chat.completions.create(
             model=model,
             temperature=creativity,
-            messages=[ {"role":"system", "content":SYSTEM_PROMPT}]
+            messages=[{"role": "system", "content": SYSTEM_PROMPT}]
                      + st.session_state.messages[-message_history:-1]
-                     + [{"role":"user", "content":full_prompt}],
+                     + [{"role": "user", "content": full_prompt}],
             stream=True,
         )
-        thinking = st.expander("Thinking", expanded=True).empty()
+        thinking = st.expander("Consulting the fates", expanded=True).empty()
         answer = st.empty()
         t = a = ""
         for chunk in stream:
@@ -146,6 +147,6 @@ if user_input and prompt:
             if d.content:
                 a += d.content
                 answer.markdown(a)
-    st.session_state.messages.append({"role":"assistant", "content":a})
-    store_conversation(prompt, a)
 
+    st.session_state.messages.append({"role": "assistant", "content": a})
+    store_chat(prompt, a)

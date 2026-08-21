@@ -1,10 +1,10 @@
 [theme]
 base = "light"
-primaryColor = "#7593af"
-backgroundColor= "#7593af"
-seconderyBackgroundColor = "#7593af"
-textColor = "#0d0d0d"
-borderColor = "#7593af"
+primaryColor = "#525e75"
+backgroundColor= "#525e75"
+seconderyBackgroundColor = "#525e75"
+textColor = "#FFFFFF"
+borderColor = "#525e75"
 font = "Edu NSW ACT Hand Cursive"
 headingFont = "Edu NSW ACT Hand Cursive"
 

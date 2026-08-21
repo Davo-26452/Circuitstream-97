@@ -50,6 +50,23 @@ def store_conversation(question, answer):
 
 st.title("StormAI")
 
+st.html(""" 
+<style>
+  .stApp  {
+    background-image:
+      linear-gradient(rgba(16,19,26,.90), rgba(16,19,26,.90)),
+      url("https://www.timeforkids.com/wp-content/uploads/2018/08/Storms-Images.jpg?w=1024");
+    background-size: cover;
+    background-attachment: fixed;
+  }
+  [data-testid="stChatMessage"] {
+    border-radius: 18px;
+    padding: 10px 16px:
+  }
+</style>
+""")
+
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
